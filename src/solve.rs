@@ -23,10 +23,22 @@ fn row<F: PrimeField<BigInt = BigInt<4>>>(value: F, limbs: usize) -> Tensor<u64>
 #[derive(Default)]
 pub struct State {
     limbs: usize,
+    /// The reference string, decoded once: it is the point's, not the case's.
+    bases: Vec<G1Affine>,
 }
 
 pub fn init(p: &Point) -> State {
-    State { limbs: p.L as usize }
+    let limbs = p.L as usize;
+    let n = p.srs_x.data.len() / limbs;
+    let bases = (0..n)
+        .map(|i| {
+            G1Affine::new_unchecked(
+                fe::<Fq>(&p.srs_x.data, i, limbs),
+                fe::<Fq>(&p.srs_y.data, i, limbs),
+            )
+        })
+        .collect();
+    State { limbs, bases }
 }
 
 pub fn run(state: &mut State, inp: &Inputs) -> Outputs {
@@ -48,15 +60,7 @@ pub fn run(state: &mut State, inp: &Inputs) -> Outputs {
     }
     let value = carry;
 
-    let bases: Vec<G1Affine> = (0..quotient.len())
-        .map(|i| {
-            G1Affine::new_unchecked(
-                fe::<Fq>(&inp.srs_x.data, i, limbs),
-                fe::<Fq>(&inp.srs_y.data, i, limbs),
-            )
-        })
-        .collect();
-    let commitment = G1Projective::msm(&bases, &quotient)
+    let commitment = G1Projective::msm(&state.bases[..quotient.len()], &quotient)
         .expect("one quotient coefficient for every point used")
         .into_affine();
     let (x, y) = commitment.xy().unwrap_or((Fq::zero(), Fq::zero()));

@@ -21,10 +21,7 @@ to answer early.
 ## The shapes
 
 - `coeffs` — tensor<N x L x u64>
-- `srs_x` — tensor<N x L x u64>
-- `srs_y` — tensor<N x L x u64>
 - `z` — tensor<L x u64>
-- `q` — tensor<L x u64>
 - returns `px` — tensor<L x u64>
 - returns `py` — tensor<L x u64>
 - returns `value` — tensor<L x u64>
